@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CapitalBlue - Smarter Stock Predictions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-white text-gray-800">
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-blue-600">Capital<span class="text-blue-400">Blue</span></h1>
+      <ul class="flex space-x-6 font-medium">
+        <li><a href="#" class="hover:text-blue-600">Home</a></li>
+        <li><a href="#predictions" class="hover:text-blue-600">Predictions</a></li>
+        <li><a href="#news" class="hover:text-blue-600">News</a></li>
+        <li><a href="#features" class="hover:text-blue-600">Features</a></li>
+      </ul>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-gray-600">{{ current_user["username"] if current_user else "" }}</span>
+        <a href="/logout" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="bg-blue-50 py-16">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+      <div class="md:w-1/2">
+        <h2 class="text-4xl font-bold mb-4 text-blue-700">Predict the Market with Confidence</h2>
+        <p class="text-lg text-gray-700 mb-6">CapitalBlue uses advanced AI models to provide accurate and real-time stock predictions, helping investors make smart decisions.</p>
+      </div>
+      <div class="md:w-1/2 mt-10 md:mt-0">
+        <img src="https://cdn-icons-png.flaticon.com/512/9405/9405145.png" alt="Stock AI" class="w-full max-w-md mx-auto">
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white min-h-screen flex items-center justify-center">
+    <div class="w-full md:w-1/2 text-center px-4">
+      <h3 class="text-4xl font-bold text-blue-600 mb-15">Search Live Stock Data</h3>
+      <form method="GET" action="/search_stock/" class="flex flex-col items-center">
+        <input
+          type="text"
+          name="symbol"
+          placeholder="Enter Stock Symbol (e.g. AAPL, TSLA)"
+          required
+          class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 outline-none"
+        />
+        <button
+          type="submit"
+          class="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+        >
+          Get Price
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section id="stock-updates" class="bg-blue-100 py-16">
+    <div class="max-w-6xl mx-auto px-6">
+      <h2 class="text-4xl font-bold mb-8 text-gray-800">Latest Stock Updates</h2>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for stock in stock_data %}
+        <div class="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
+          <h3 class="text-lg font-bold text-blue-600">{{ stock.symbol }}</h3>
+          <div class="flex items-center justify-between mt-2">
+            <p class="text-2xl font-extrabold text-gray-900">${{ stock.current_price if stock.current_price is not none else "-" }}</p>
+            {% if stock.change > 0 %}
+            <span class="text-green-600 font-semibold">+ {{ stock.change }}</span>
+            {% elif stock.change < 0 %}
+            <span class="text-red-600 font-semibold">{{ stock.change }}</span>
+            {% else %}
+            <span class="text-gray-500 font-semibold">-</span>
+            {% endif %}
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Previous Close: ${{ stock.previous_close if stock.previous_close is not none else "-" }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <div id="news" class="max-w-7xl mx-auto px-6 py-10 bg-gray-50">
+    <div class="mb-8 text-center">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Latest Market News</h1>
+      <p class="text-sm text-gray-600">Stay updated with stock, crypto, and forex insights all in one place.</p>
+    </div>
+
+    <section>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for article in articles %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition hover:-translate-y-1">
+          {% if article.image %}
+          <img src="{{ article.image }}" alt="News image" class="w-full h-40 object-cover">
+          {% endif %}
+          <div class="p-4">
+            <a href="{{ article.url }}" target="_blank" class="text-base font-semibold text-blue-700 hover:underline block mb-1">
+              {{ article.headline }}
+            </a>
+            <p class="text-sm text-gray-600 mb-2">{{ article.summary }}</p>
+            <p class="text-xs text-gray-500">
+              Source: <span class="font-medium">{{ article.source }}</span>
+              {% if article.datetime_formatted %}&bull; {{ article.datetime_formatted }}{% endif %}
+            </p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="text-center mt-10">
+        <a href="/market_news/" class="inline-block bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium shadow hover:bg-blue-800 transition duration-300">
+          View All News
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <section id="predictions" class="bg-gradient-to-r from-blue-50 to-blue-100 h-[50vh] flex items-center justify-center">
+    <div class="text-center px-6 max-w-2xl">
+      <h2 class="text-4xl font-bold text-blue-900 mb-4 leading-tight">Start Predicting</h2>
+      <p class="text-base text-blue-700 mb-6">
+        Access real-time insights and forecast market trends using data-driven intelligence. Your next move starts here.
+      </p>
+      <a href="/prediction" class="inline-block bg-blue-700 text-white px-8 py-3 rounded-md text-base font-semibold shadow-lg hover:bg-blue-800 transition duration-300">
+        Get Your Predictions
+      </a>
+    </div>
+  </section>
+
+  <section id="features" class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-blue-700 mb-12">Platform Features</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">AI-Powered Predictions</h4>
+          <p class="mt-2 text-gray-600">Get forecasts generated using state-of-the-art LSTM and ML models.</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">Technical Indicators</h4>
+          <p class="mt-2 text-gray-600">Analyze with RSI, MACD, EMA and more, built into every chart.</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">Secure User Dashboard</h4>
+          <p class="mt-2 text-gray-600">Save your predictions, manage your profile, and track your portfolio securely.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-blue-600 py-16 text-white text-center">
+    <h2 class="text-3xl font-bold mb-4">Join Thousands of Smart Investors</h2>
+    <p class="text-lg mb-6">Sign up now and get your predictions free!</p>
+    <a href="/signup" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Sign Up</a>
+  </section>
+
+  <footer class="bg-blue-50 py-6 mt-16">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-700">
+      <p>&copy; 2025 CapitalBlue. All rights reserved.</p>
+      <div class="space-x-4 mt-4 md:mt-0">
+        <a href="#" class="hover:text-blue-600">Privacy Policy</a>
+        <a href="#" class="hover:text-blue-600">Terms</a>
+        <a href="#news" class="hover:text-blue-600">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    setInterval(() => {
+      window.location.reload();
+    }, 120000);
+  </script>
+</body>
+</html>
+

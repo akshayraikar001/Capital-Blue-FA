@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CapitalBlue - Smarter Stock Predictions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-white text-gray-800">
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-blue-600">Capital<span class="text-blue-400">Blue</span></h1>
+      <ul class="flex space-x-6 font-medium">
+        <li><a href="#" class="hover:text-blue-600">Home</a></li>
+        <li><a href="#features" class="hover:text-blue-600">Features</a></li>
+        <li><a href="#predictions" class="hover:text-blue-600">Predictions</a></li>
+        <li><a href="#contact" class="hover:text-blue-600">Contact</a></li>
+      </ul>
+      <a href="/login" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Login</a>
+    </div>
+  </nav>
+
+  <section class="bg-blue-50 py-16">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+      <div class="md:w-1/2">
+        <h2 class="text-4xl font-bold mb-4 text-blue-700">Predict the Market with Confidence</h2>
+        <p class="text-lg text-gray-700 mb-6">CapitalBlue uses advanced AI models to provide accurate and real-time stock predictions, helping investors make smart decisions.</p>
+        <a href="/signup" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">Get Started</a>
+      </div>
+      <div class="md:w-1/2 mt-10 md:mt-0">
+        <img src="https://cdn-icons-png.flaticon.com/512/9405/9405145.png" alt="Stock AI" class="w-full max-w-md mx-auto">
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-12">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h3 class="text-2xl font-bold text-blue-600 mb-4">Search Live Stock Price</h3>
+      <input type="text" placeholder="Enter Stock Symbol (e.g. AAPL, TSLA)" class="w-full md:w-2/3 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 outline-none" />
+      <br><br><br>
+      <a href="/login" class="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+        Get Price
+      </a>
+    </div>
+  </section>
+
+  <section id="features" class="bg-blue-50 py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-blue-700 mb-12">Platform Features</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">AI-Powered Predictions</h4>
+          <p class="mt-2 text-gray-600">Get forecasts generated using state-of-the-art LSTM and ML models.</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">Technical Indicators</h4>
+          <p class="mt-2 text-gray-600">Analyze with RSI, MACD, EMA and more, built into every chart.</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+          <h4 class="text-xl font-semibold text-blue-600">Secure User Dashboard</h4>
+          <p class="mt-2 text-gray-600">Save your predictions, manage your profile, and track your portfolio securely.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="predictions" class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold text-blue-700 mb-12">Trending Predictions</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="border p-6 rounded-lg shadow hover:shadow-lg transition">
+          <h4 class="text-xl font-semibold">Tesla (TSLA)</h4>
+          <p class="text-green-600 mt-2">Predicted Rise: +4.2% next 7 days</p>
+        </div>
+        <div class="border p-6 rounded-lg shadow hover:shadow-lg transition">
+          <h4 class="text-xl font-semibold">Apple (AAPL)</h4>
+          <p class="text-red-600 mt-2">Predicted Drop: -2.1% next 7 days</p>
+        </div>
+        <div class="border p-6 rounded-lg shadow hover:shadow-lg transition">
+          <h4 class="text-xl font-semibold">Google (GOOGL)</h4>
+          <p class="text-green-600 mt-2">Predicted Rise: +1.8% next 5 days</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-blue-600 py-16 text-white text-center">
+    <h2 class="text-3xl font-bold mb-4">Join Thousands of Smart Investors</h2>
+    <p class="text-lg mb-6">Sign up now and get your first 3 predictions free!</p>
+    <a href="/signup" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Sign Up</a>
+  </section>
+
+  <footer class="bg-blue-50 py-6 mt-16">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-700">
+      <p>&copy; 2025 CapitalBlue. All rights reserved.</p>
+      <div class="space-x-4 mt-4 md:mt-0">
+        <a href="#" class="hover:text-blue-600">Privacy Policy</a>
+        <a href="#" class="hover:text-blue-600">Terms</a>
+        <a href="#contact" class="hover:text-blue-600">Contact</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
+

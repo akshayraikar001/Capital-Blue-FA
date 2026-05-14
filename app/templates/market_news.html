@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market News - CapitalBlue</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-blue-600">Capital<span class="text-blue-400">Blue</span></h1>
+      <ul class="flex space-x-6 font-medium">
+        <li><a href="/home_user/" class="hover:text-blue-600">Home</a></li>
+        <li><a href="/prediction" class="hover:text-blue-600">Predictions</a></li>
+        <li><a href="/market_news/" class="hover:text-blue-600">News</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="text-center mt-10 mb-6">
+    <h1 class="text-4xl font-extrabold flex justify-center items-center">
+      <span class="ml-2 text-gray-900">Daily Market News</span>
+    </h1>
+    <p class="text-gray-600 mt-2">Stay updated with real-time global market headlines, powered by Finnhub.</p>
+  </header>
+
+  <div id="news-container" class="max-w-6xl mx-auto px-4 py-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    {% for article in articles %}
+      <div class="bg-white rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden border border-gray-100">
+        {% if article.image %}
+          <img src="{{ article.image }}" alt="News image" class="w-full h-48 object-cover">
+        {% endif %}
+        <div class="p-5">
+          <a href="{{ article.url }}" target="_blank" class="text-lg font-semibold text-blue-700 hover:underline block mb-2">
+            {{ article.headline }}
+          </a>
+          <p class="text-sm text-gray-600 line-clamp-3">{{ article.summary }}</p>
+          <p class="text-xs text-gray-400 mt-3">Source: {{ article.source }}</p>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-center text-gray-500 col-span-3">No news available right now. Please check back later.</p>
+    {% endfor %}
+  </div>
+
+  <script>
+    async function refreshMarketNews() {
+      try {
+        const res = await fetch("/market_news/", {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        const data = await res.json();
+        const container = document.getElementById("news-container");
+        container.innerHTML = "";
+
+        const sortedNews = data.articles.sort((a, b) => b.datetime - a.datetime);
+        if (!sortedNews.length) {
+          container.innerHTML = '<p class="text-center text-gray-500 col-span-3">No news available right now. Please check back later.</p>';
+          return;
+        }
+
+        sortedNews.slice(0, 30).forEach(article => {
+          const image = article.image || "https://via.placeholder.com/400x200?text=No+Image";
+          container.innerHTML += `
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden border border-gray-100">
+              <img src="${image}" alt="News image" class="w-full h-48 object-cover">
+              <div class="p-5">
+                <a href="${article.url}" target="_blank" class="text-lg font-semibold text-blue-700 hover:underline block mb-2">
+                  ${article.headline}
+                </a>
+                <p class="text-sm text-gray-600">${article.summary || "No description available."}</p>
+                <p class="text-xs text-gray-400 mt-3">Source: ${article.source || ""}</p>
+              </div>
+            </div>`;
+        });
+      } catch (err) {
+        console.error("Error refreshing market news:", err);
+      }
+    }
+
+    setInterval(refreshMarketNews, 180000);
+  </script>
+</body>
+</html>
+

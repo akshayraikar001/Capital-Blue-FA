@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <form class="login-form" method="POST" action="/login">
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
+            <h2>Login</h2>
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+
+        {% if errors %}
+            <div style="color: red; margin-top: 10px;">
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if next_url %}
+            <p style="color: green;">Please login to continue</p>
+        {% endif %}
+
+        {% if messages %}
+            {% for message in messages %}
+                <p style="color: green;">{{ message.text }}</p>
+            {% endfor %}
+        {% endif %}
+
+        <p class="signup-link">Don't have an account? <a href="/signup">Sign up</a></p>
+    </div>
+</body>
+</html>
+

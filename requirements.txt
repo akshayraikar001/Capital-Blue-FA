@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+jinja2
+itsdangerous
+python-multipart
+requests
+pandas
+numpy
+scikit-learn
+tensorflow
+keras
+joblib
+yfinance
+finnhub-python
+httpx

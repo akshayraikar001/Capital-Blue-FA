@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ symbol }} Stock Price</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 1s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-3xl mx-auto py-12 px-6 text-center fade-in">
+    <h2 class="text-3xl font-bold text-blue-600 mb-6">{{ symbol }} Stock Price</h2>
+
+    {% if price %}
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <p class="text-xl mb-2">Current price of <strong>{{ symbol }}</strong>:
+          <span class="text-green-600 font-semibold">${{ price }}</span>
+        </p>
+
+        {% if dates_json != "[]" and prices_json != "[]" %}
+          <canvas id="stockChart" class="mt-6"></canvas>
+        {% endif %}
+      </div>
+    {% elif error %}
+      <p class="text-red-600 font-semibold text-lg">{{ error }}</p>
+    {% endif %}
+
+    <a href="/home_user/" class="mt-8 inline-block text-blue-600 underline text-lg">&larr; Back to Home</a>
+  </div>
+
+  {% if dates_json != "[]" and prices_json != "[]" %}
+  <script>
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ dates_json | safe }},
+        datasets: [{
+          label: '{{ symbol }} - Last 7 Days',
+          data: {{ prices_json | safe }},
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.2)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: false
+          }
+        }
+      }
+    });
+  </script>
+  {% endif %}
+</body>
+</html>
+
