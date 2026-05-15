@@ -1,12 +1,11 @@
 import json
+import threading
 from datetime import timedelta
 
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.models import Sequential, load_model
 
 from app.config import MODEL_DIR
 from app.services.market_data import (
@@ -14,6 +13,9 @@ from app.services.market_data import (
     fetch_company_news,
     fetch_stock_data,
 )
+
+_model_cache_lock = threading.Lock()
+_model_cache: dict[str, tuple[object, object]] = {}
 
 
 def model_path(symbol: str):
@@ -39,6 +41,9 @@ def prepare_data(df: pd.DataFrame, window: int = 60):
 
 
 def build_model(input_shape):
+    from tensorflow.keras.layers import LSTM, Dense
+    from tensorflow.keras.models import Sequential
+
     model = Sequential()
     model.add(LSTM(units=50, return_sequences=True, input_shape=input_shape))
     model.add(LSTM(units=50, return_sequences=False))
@@ -54,14 +59,26 @@ def train_and_save(df: pd.DataFrame, symbol: str, window: int = 60, epochs: int 
     model.fit(x_values, y_values, epochs=epochs, batch_size=32, verbose=0)
     model.save(model_path(symbol))
     joblib.dump(scaler, scaler_path(symbol))
+    with _model_cache_lock:
+        _model_cache[symbol.upper()] = (model, scaler)
     return model, scaler
 
 
 def load_model_and_scaler(symbol: str):
+    symbol = symbol.upper()
+    with _model_cache_lock:
+        cached = _model_cache.get(symbol)
+        if cached is not None:
+            return cached
+
     if not model_path(symbol).exists() or not scaler_path(symbol).exists():
         raise FileNotFoundError("Model or scaler not found")
+    from tensorflow.keras.models import load_model
+
     model = load_model(model_path(symbol))
     scaler = joblib.load(scaler_path(symbol))
+    with _model_cache_lock:
+        _model_cache[symbol] = (model, scaler)
     return model, scaler
 
 
@@ -219,4 +236,3 @@ def build_stock_chart_api_payload(symbol: str) -> dict:
         "gauge_values": json.loads(context["gauge_values_json"]),
         "error": context["error"],
     }
-

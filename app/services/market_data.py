@@ -1,4 +1,7 @@
 import datetime as dt
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import finnhub
 import pandas as pd
@@ -8,6 +11,27 @@ import yfinance as yf
 from app.config import FINNHUB_API_KEY
 
 finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+http_session = requests.Session()
+_cache_lock = threading.Lock()
+_cache_store: dict[tuple, tuple[float, object]] = {}
+
+
+def _cache_get(key: tuple, ttl_seconds: int):
+    now = time.time()
+    with _cache_lock:
+        item = _cache_store.get(key)
+        if not item:
+            return None
+        expires_at, value = item
+        if expires_at <= now:
+            _cache_store.pop(key, None)
+            return None
+        return value
+
+
+def _cache_set(key: tuple, ttl_seconds: int, value):
+    with _cache_lock:
+        _cache_store[key] = (time.time() + ttl_seconds, value)
 
 
 def _normalize_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -34,17 +58,30 @@ def _normalize_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_quote(symbol: str) -> dict:
-    response = requests.get(
+    symbol = symbol.upper()
+    cache_key = ("quote", symbol)
+    cached = _cache_get(cache_key, ttl_seconds=30)
+    if cached is not None:
+        return dict(cached)
+
+    response = http_session.get(
         "https://finnhub.io/api/v1/quote",
-        params={"symbol": symbol.upper(), "token": FINNHUB_API_KEY},
+        params={"symbol": symbol, "token": FINNHUB_API_KEY},
         timeout=15,
     )
     response.raise_for_status()
-    return response.json()
+    payload = response.json()
+    _cache_set(cache_key, ttl_seconds=30, value=payload)
+    return dict(payload)
 
 
 def fetch_general_market_news(limit: int = 30) -> list[dict]:
-    response = requests.get(
+    cache_key = ("general_news", limit)
+    cached = _cache_get(cache_key, ttl_seconds=180)
+    if cached is not None:
+        return [dict(item) for item in cached]
+
+    response = http_session.get(
         "https://finnhub.io/api/v1/news",
         params={"category": "general", "token": FINNHUB_API_KEY},
         timeout=20,
@@ -52,7 +89,9 @@ def fetch_general_market_news(limit: int = 30) -> list[dict]:
     response.raise_for_status()
     articles = response.json() or []
     articles = sorted(articles, key=lambda item: item.get("datetime", 0), reverse=True)
-    return [_serialize_article(item) for item in articles[:limit]]
+    serialized = [_serialize_article(item) for item in articles[:limit]]
+    _cache_set(cache_key, ttl_seconds=180, value=serialized)
+    return [dict(item) for item in serialized]
 
 
 def _serialize_article(item: dict) -> dict:
@@ -78,6 +117,11 @@ def _serialize_article(item: dict) -> dict:
 
 
 def fetch_candles_finnhub(symbol: str, days: int = 365) -> pd.DataFrame:
+    cache_key = ("daily_finnhub", symbol.upper(), days)
+    cached = _cache_get(cache_key, ttl_seconds=300)
+    if cached is not None:
+        return cached.copy()
+
     end_ts = int(dt.datetime.now().timestamp())
     start_ts = int((dt.datetime.now() - dt.timedelta(days=days)).timestamp())
     candles = finnhub_client.stock_candles(symbol.upper(), "D", start_ts, end_ts)
@@ -93,10 +137,17 @@ def fetch_candles_finnhub(symbol: str, days: int = 365) -> pd.DataFrame:
             "volume": candles["v"],
         }
     )
-    return _normalize_df(frame)
+    normalized = _normalize_df(frame)
+    _cache_set(cache_key, ttl_seconds=300, value=normalized.copy())
+    return normalized
 
 
 def fetch_intraday_finnhub(symbol: str, minutes: int = 1440, resolution: str = "1") -> pd.DataFrame:
+    cache_key = ("intraday_finnhub", symbol.upper(), minutes, resolution)
+    cached = _cache_get(cache_key, ttl_seconds=60)
+    if cached is not None:
+        return cached.copy()
+
     end_ts = int(dt.datetime.now().timestamp())
     start_ts = int((dt.datetime.now() - dt.timedelta(minutes=minutes)).timestamp())
     candles = finnhub_client.stock_candles(symbol.upper(), resolution, start_ts, end_ts)
@@ -112,10 +163,17 @@ def fetch_intraday_finnhub(symbol: str, minutes: int = 1440, resolution: str = "
             "volume": candles["v"],
         }
     )
-    return _normalize_df(frame)
+    normalized = _normalize_df(frame)
+    _cache_set(cache_key, ttl_seconds=60, value=normalized.copy())
+    return normalized
 
 
 def fetch_candles_yfinance(symbol: str, days: int = 365) -> pd.DataFrame:
+    cache_key = ("daily_yfinance", symbol.upper(), days)
+    cached = _cache_get(cache_key, ttl_seconds=300)
+    if cached is not None:
+        return cached.copy()
+
     frame = yf.download(symbol.upper(), period=f"{days}d", interval="1d", progress=False)
     if frame is None or frame.empty:
         raise RuntimeError("yfinance returned empty data")
@@ -129,10 +187,17 @@ def fetch_candles_yfinance(symbol: str, days: int = 365) -> pd.DataFrame:
             "Volume": "volume",
         }
     )
-    return _normalize_df(frame)
+    normalized = _normalize_df(frame)
+    _cache_set(cache_key, ttl_seconds=300, value=normalized.copy())
+    return normalized
 
 
 def fetch_intraday_yfinance(symbol: str, days: int = 1, interval: str = "1m") -> pd.DataFrame:
+    cache_key = ("intraday_yfinance", symbol.upper(), days, interval)
+    cached = _cache_get(cache_key, ttl_seconds=60)
+    if cached is not None:
+        return cached.copy()
+
     frame = yf.download(symbol.upper(), period=f"{days}d", interval=interval, progress=False)
     if frame is None or frame.empty:
         raise RuntimeError("yfinance intraday returned empty data")
@@ -147,7 +212,9 @@ def fetch_intraday_yfinance(symbol: str, days: int = 1, interval: str = "1m") ->
             "Volume": "volume",
         }
     )
-    return _normalize_df(frame)
+    normalized = _normalize_df(frame)
+    _cache_set(cache_key, ttl_seconds=60, value=normalized.copy())
+    return normalized
 
 
 def fetch_stock_data(
@@ -174,9 +241,15 @@ def fetch_stock_data(
 
 
 def fetch_company_metrics(symbol: str) -> dict:
+    symbol = symbol.upper()
+    cache_key = ("company_metrics", symbol)
+    cached = _cache_get(cache_key, ttl_seconds=300)
+    if cached is not None:
+        return dict(cached)
+
     try:
-        info = yf.Ticker(symbol.upper()).info or {}
-        return {
+        info = yf.Ticker(symbol).info or {}
+        payload = {
             "market_cap": info.get("marketCap"),
             "trailingPE": info.get("trailingPE"),
             "previousClose": info.get("previousClose"),
@@ -185,17 +258,26 @@ def fetch_company_metrics(symbol: str) -> dict:
             "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
             "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
         }
+        _cache_set(cache_key, ttl_seconds=300, value=payload)
+        return dict(payload)
     except Exception:
         return {}
 
 
 def fetch_company_news(symbol: str, days: int = 7) -> list[dict]:
     symbol = symbol.upper()
+    cache_key = ("company_news", symbol, days)
+    cached = _cache_get(cache_key, ttl_seconds=180)
+    if cached is not None:
+        return [dict(item) for item in cached]
+
     try:
         end = dt.date.today()
         start = end - dt.timedelta(days=days)
         response = finnhub_client.company_news(symbol, start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
-        return [_serialize_article(item) for item in response[:6]]
+        serialized = [_serialize_article(item) for item in response[:6]]
+        _cache_set(cache_key, ttl_seconds=180, value=serialized)
+        return [dict(item) for item in serialized]
     except Exception:
         try:
             items = getattr(yf.Ticker(symbol), "news", None) or []
@@ -212,32 +294,35 @@ def fetch_company_news(symbol: str, days: int = 7) -> list[dict]:
                         "datetime_formatted": "",
                     }
                 )
-            return serialized
+            _cache_set(cache_key, ttl_seconds=180, value=serialized)
+            return [dict(item) for item in serialized]
         except Exception:
             return []
 
 
 def fetch_popular_stock_quotes(symbols: list[str]) -> list[dict]:
-    quotes = []
-    for symbol in symbols:
+    def build_quote(symbol: str) -> dict:
         try:
             data = fetch_quote(symbol)
-            quotes.append(
-                {
-                    "symbol": symbol.upper(),
-                    "current_price": data.get("c"),
-                    "previous_close": data.get("pc"),
-                    "change": round(data.get("d", 0) or 0, 2),
-                }
-            )
+            return {
+                "symbol": symbol.upper(),
+                "current_price": data.get("c"),
+                "previous_close": data.get("pc"),
+                "change": round(data.get("d", 0) or 0, 2),
+            }
         except Exception:
-            quotes.append(
-                {
-                    "symbol": symbol.upper(),
-                    "current_price": None,
-                    "previous_close": None,
-                    "change": 0,
-                }
-            )
-    return quotes
+            return {
+                "symbol": symbol.upper(),
+                "current_price": None,
+                "previous_close": None,
+                "change": 0,
+            }
 
+    quotes_by_symbol = {}
+    with ThreadPoolExecutor(max_workers=min(6, max(1, len(symbols)))) as executor:
+        futures = {executor.submit(build_quote, symbol): symbol for symbol in symbols}
+        for future in as_completed(futures):
+            quote = future.result()
+            quotes_by_symbol[quote["symbol"]] = quote
+
+    return [quotes_by_symbol.get(symbol.upper(), build_quote(symbol)) for symbol in symbols]
