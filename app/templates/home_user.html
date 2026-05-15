@@ -11,49 +11,116 @@
     body { font-family: 'Inter', sans-serif; }
   </style>
 </head>
-<body class="bg-white text-gray-800">
-  <nav class="bg-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-blue-600">Capital<span class="text-blue-400">Blue</span></h1>
-      <ul class="flex space-x-6 font-medium">
-        <li><a href="#" class="hover:text-blue-600">Home</a></li>
-        <li><a href="#predictions" class="hover:text-blue-600">Predictions</a></li>
-        <li><a href="#news" class="hover:text-blue-600">News</a></li>
-        <li><a href="#features" class="hover:text-blue-600">Features</a></li>
-      </ul>
-      <div class="flex items-center gap-4">
-        <span class="text-sm text-gray-600">{{ current_user["username"] if current_user else "" }}</span>
-        <a href="/logout" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Logout</a>
+<body class="bg-white text-gray-800 overflow-x-hidden">
+  <div class="min-h-screen bg-white">
+  <nav class="px-4 pt-5 md:px-6 md:pt-6 relative z-50">
+    <div class="max-w-7xl mx-auto rounded-[28px] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] px-5 py-4 md:px-7 md:py-5 overflow-visible">
+      <div class="flex items-center justify-between gap-4 md:hidden">
+        <h1 class="text-3xl font-extrabold text-blue-600 leading-none">Capital<span class="text-blue-400">Blue</span></h1>
+        <button
+          type="button"
+          id="mobileMenuButton"
+          class="md:hidden inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
+          aria-expanded="false"
+          aria-controls="mobileMenu"
+        >
+          Menu
+        </button>
+      </div>
+
+      <div class="hidden md:flex md:items-center md:justify-between md:relative min-h-[76px]">
+        <h1 class="text-3xl font-extrabold text-blue-600 leading-none whitespace-nowrap">Capital<span class="text-blue-400">Blue</span></h1>
+        <ul class="flex flex-wrap items-center justify-center gap-8 font-medium text-[17px] text-slate-700 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+          <li><a href="#" class="hover:text-blue-600">Home</a></li>
+          <li><a href="#predictions" class="hover:text-blue-600">Predictions</a></li>
+          <li><a href="#news" class="hover:text-blue-600">News</a></li>
+          <li><a href="#features" class="hover:text-blue-600">Features</a></li>
+        </ul>
+        <div class="relative shrink-0 ml-auto">
+          <button
+            type="button"
+            id="desktopProfileButton"
+            class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"
+            aria-expanded="false"
+          >
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">
+              {{ current_user["username"][0].upper() if current_user else "U" }}
+            </span>
+            <span>{{ current_user["username"] if current_user else "" }}</span>
+            <span class="text-slate-400">▾</span>
+          </button>
+          <div
+            id="desktopProfileMenu"
+            class="hidden absolute right-0 top-full z-[60] mt-3 w-56 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.12)]"
+          >
+            <p class="px-3 py-2 text-sm text-slate-500">Signed in as</p>
+            <p class="px-3 pb-3 text-sm font-semibold text-slate-800">{{ current_user["username"] if current_user else "" }}</p>
+            <a href="/logout" class="block rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">Logout</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="mobileMenu" class="hidden md:hidden mt-4 border-t border-slate-100 pt-4">
+        <ul class="flex flex-col gap-3 font-medium text-slate-700">
+          <li><a href="#" class="block rounded-xl px-3 py-2 hover:bg-slate-50 hover:text-blue-600">Home</a></li>
+          <li><a href="#predictions" class="block rounded-xl px-3 py-2 hover:bg-slate-50 hover:text-blue-600">Predictions</a></li>
+          <li><a href="#news" class="block rounded-xl px-3 py-2 hover:bg-slate-50 hover:text-blue-600">News</a></li>
+          <li><a href="#features" class="block rounded-xl px-3 py-2 hover:bg-slate-50 hover:text-blue-600">Features</a></li>
+        </ul>
+        <div class="mt-4 rounded-2xl bg-slate-50 p-3">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">
+              {{ current_user["username"][0].upper() if current_user else "U" }}
+            </span>
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Profile</p>
+              <p class="text-sm font-semibold text-slate-800">{{ current_user["username"] if current_user else "" }}</p>
+            </div>
+          </div>
+          <a href="/logout" class="mt-4 block rounded-2xl bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">Logout</a>
+        </div>
       </div>
     </div>
   </nav>
 
-  <section class="bg-blue-50 py-16">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
-      <div class="md:w-1/2">
-        <h2 class="text-4xl font-bold mb-4 text-blue-700">Predict the Market with Confidence</h2>
-        <p class="text-lg text-gray-700 mb-6">CapitalBlue uses advanced AI models to provide accurate and real-time stock predictions, helping investors make smart decisions.</p>
+  <section class="px-4 pt-6 pb-10 md:px-6 md:pt-8 md:pb-16">
+    <div class="relative overflow-hidden max-w-7xl mx-auto rounded-[34px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-6 py-10 md:px-10 md:py-12 flex flex-col md:flex-row items-center justify-between gap-10 shadow-[0_24px_60px_rgba(30,41,59,0.08)]">
+      <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(239,246,255,0.75),rgba(255,255,255,0.18))]"></div>
+      <div class="md:w-[52%] text-center md:text-left relative z-10">
+        <div class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-700 shadow-sm">AI-powered investing</div>
+        <h2 class="mt-5 text-4xl sm:text-5xl font-extrabold mb-5 text-slate-900 leading-[1.02]">Predict the Market with Confidence</h2>
+        <p class="text-base sm:text-lg text-slate-600 mb-7 max-w-xl">CapitalBlue uses advanced AI models to provide accurate and real-time stock predictions, helping investors make smart decisions.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
+          <a href="/prediction" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_14px_35px_rgba(37,99,235,0.24)] hover:bg-blue-700">Open Prediction Desk</a>
+          <a href="#stock-updates" class="inline-flex items-center justify-center rounded-2xl border border-blue-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700">View Market Snapshot</a>
+        </div>
       </div>
-      <div class="md:w-1/2 mt-10 md:mt-0">
-        <img src="https://cdn-icons-png.flaticon.com/512/9405/9405145.png" alt="Stock AI" class="w-full max-w-md mx-auto">
+      <div class="md:w-[48%] relative z-10">
+        <div class="mx-auto max-w-md rounded-[30px] bg-white p-5 shadow-[0_18px_40px_rgba(37,99,235,0.08)] ring-1 ring-blue-100">
+          <img src="https://cdn-icons-png.flaticon.com/512/9405/9405145.png" alt="Stock AI" class="w-full max-w-md mx-auto">
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="bg-white min-h-screen flex items-center justify-center">
-    <div class="w-full md:w-1/2 text-center px-4">
-      <h3 class="text-4xl font-bold text-blue-600 mb-15">Search Live Stock Data</h3>
-      <form method="GET" action="/search_stock/" class="flex flex-col items-center">
+  <section class="px-4 pb-10 md:px-6 md:pb-14">
+    <div class="max-w-4xl mx-auto rounded-[30px] bg-white px-5 py-8 sm:px-8 sm:py-10 shadow-[0_20px_60px_rgba(15,23,42,0.08)] ring-1 ring-slate-100">
+      <div class="text-center">
+      <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500">Search</p>
+      <h3 class="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Search Live Stock Data</h3>
+      <p class="text-sm sm:text-base text-slate-500 mb-8">Quickly check a ticker before diving into predictions and market context.</p>
+      </div>
+      <form method="GET" action="/search_stock/" class="flex flex-col sm:flex-row items-stretch gap-3">
         <input
           type="text"
           name="symbol"
           placeholder="Enter Stock Symbol (e.g. AAPL, TSLA)"
           required
-          class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 outline-none"
+          class="w-full flex-1 px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none text-slate-800"
         />
         <button
           type="submit"
-          class="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+          class="px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-cyan-600 transition shadow-[0_14px_30px_rgba(14,116,244,0.24)]"
         >
           Get Price
         </button>
@@ -63,49 +130,66 @@
 
   <section id="stock-updates" class="bg-blue-100 py-16">
     <div class="max-w-6xl mx-auto px-6">
-      <h2 class="text-4xl font-bold mb-8 text-gray-800">Latest Stock Updates</h2>
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-700/70 mb-2 text-center sm:text-left">Market snapshot</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 text-center sm:text-left">Latest Stock Updates</h2>
+        </div>
+        <p class="text-sm text-slate-600 text-center sm:text-right">A fast read on major names before you explore deeper.</p>
+      </div>
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {% for stock in stock_data %}
-        <div class="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-          <h3 class="text-lg font-bold text-blue-600">{{ stock.symbol }}</h3>
-          <div class="flex items-center justify-between mt-2">
-            <p class="text-2xl font-extrabold text-gray-900">${{ stock.current_price if stock.current_price is not none else "-" }}</p>
+        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-[26px] shadow-[0_18px_45px_rgba(37,99,235,0.08)] hover:shadow-[0_22px_55px_rgba(37,99,235,0.14)] transition border border-white/70">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Ticker</p>
+              <h3 class="text-xl font-bold text-slate-900">{{ stock.symbol }}</h3>
+            </div>
+            <div class="h-11 w-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold">{{ stock.symbol[:1] }}</div>
+          </div>
+          <div class="flex items-center justify-between mt-5 gap-4">
+            <p class="text-3xl font-extrabold text-gray-900">${{ stock.current_price if stock.current_price is not none else "-" }}</p>
             {% if stock.change > 0 %}
-            <span class="text-green-600 font-semibold">+ {{ stock.change }}</span>
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-green-600 font-semibold">+ {{ stock.change }}</span>
             {% elif stock.change < 0 %}
-            <span class="text-red-600 font-semibold">{{ stock.change }}</span>
+            <span class="rounded-full bg-red-50 px-3 py-1 text-red-600 font-semibold">{{ stock.change }}</span>
             {% else %}
-            <span class="text-gray-500 font-semibold">-</span>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-gray-500 font-semibold">-</span>
             {% endif %}
           </div>
-          <p class="text-sm text-gray-600 mt-1">Previous Close: ${{ stock.previous_close if stock.previous_close is not none else "-" }}</p>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
+            <span class="text-slate-500">Previous Close</span>
+            <span class="font-semibold text-slate-700">${{ stock.previous_close if stock.previous_close is not none else "-" }}</span>
+          </div>
         </div>
         {% endfor %}
       </div>
     </div>
   </section>
 
-  <div id="news" class="max-w-7xl mx-auto px-6 py-10 bg-gray-50">
+  <div id="news" class="max-w-7xl mx-auto px-4 sm:px-6 py-10 bg-gray-50">
     <div class="mb-8 text-center">
-      <h1 class="text-4xl font-bold text-gray-900 mb-2 leading-tight">Latest Market News</h1>
+      <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500 mb-3">Intel feed</p>
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2 leading-tight">Latest Market News</h1>
       <p class="text-sm text-gray-600">Stay updated with stock, crypto, and forex insights all in one place.</p>
     </div>
 
     <section>
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {% for article in articles %}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition hover:-translate-y-1">
+        <div class="bg-white rounded-[24px] shadow-[0_14px_36px_rgba(15,23,42,0.08)] border border-gray-200/80 overflow-hidden hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] transition hover:-translate-y-1">
           {% if article.image %}
-          <img src="{{ article.image }}" alt="News image" class="w-full h-40 object-cover">
+          <img src="{{ article.image }}" alt="News image" class="w-full h-44 object-cover">
           {% endif %}
-          <div class="p-4">
-            <a href="{{ article.url }}" target="_blank" class="text-base font-semibold text-blue-700 hover:underline block mb-1">
+          <div class="p-5">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400 mb-3">{{ article.source or 'Market Wire' }}</div>
+            <a href="{{ article.url }}" target="_blank" class="text-base font-semibold text-slate-900 hover:text-blue-700 block mb-2 leading-snug">
               {{ article.headline }}
             </a>
-            <p class="text-sm text-gray-600 mb-2">{{ article.summary }}</p>
-            <p class="text-xs text-gray-500">
-              Source: <span class="font-medium">{{ article.source }}</span>
-              {% if article.datetime_formatted %}&bull; {{ article.datetime_formatted }}{% endif %}
+            <p class="text-sm text-gray-600 mb-4">{{ article.summary }}</p>
+            <p class="text-xs text-gray-500 flex items-center justify-between gap-2">
+              <span class="font-medium">{{ article.source }}</span>
+              {% if article.datetime_formatted %}<span>{{ article.datetime_formatted }}</span>{% endif %}
             </p>
           </div>
         </div>
@@ -120,31 +204,38 @@
     </section>
   </div>
 
-  <section id="predictions" class="bg-gradient-to-r from-blue-50 to-blue-100 h-[50vh] flex items-center justify-center">
-    <div class="text-center px-6 max-w-2xl">
-      <h2 class="text-4xl font-bold text-blue-900 mb-4 leading-tight">Start Predicting</h2>
-      <p class="text-base text-blue-700 mb-6">
+  <section id="predictions" class="px-4 py-12 md:px-6 md:py-16">
+    <div class="max-w-5xl mx-auto rounded-[34px] bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-900 text-white px-6 py-10 sm:px-10 sm:py-14 shadow-[0_26px_70px_rgba(15,23,42,0.28)]">
+    <div class="text-center max-w-2xl mx-auto">
+      <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-200 mb-3">Prediction workspace</p>
+      <h2 class="text-4xl font-bold text-white mb-4 leading-tight">Start Predicting</h2>
+      <p class="text-base text-blue-100/90 mb-6">
         Access real-time insights and forecast market trends using data-driven intelligence. Your next move starts here.
       </p>
-      <a href="/prediction" class="inline-block bg-blue-700 text-white px-8 py-3 rounded-md text-base font-semibold shadow-lg hover:bg-blue-800 transition duration-300">
+      <a href="/prediction" class="inline-block bg-white text-slate-950 px-8 py-3 rounded-2xl text-base font-semibold shadow-lg hover:bg-blue-50 transition duration-300">
         Get Your Predictions
       </a>
+    </div>
     </div>
   </section>
 
   <section id="features" class="bg-white py-16">
     <div class="max-w-7xl mx-auto px-4">
+      <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500 mb-3 text-center">Why it feels sharper</p>
       <h2 class="text-3xl font-bold text-center text-blue-700 mb-12">Platform Features</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+        <div class="bg-white p-7 rounded-[24px] shadow-[0_16px_36px_rgba(15,23,42,0.08)] text-center border border-slate-100">
+          <div class="mx-auto mb-4 h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">AI</div>
           <h4 class="text-xl font-semibold text-blue-600">AI-Powered Predictions</h4>
           <p class="mt-2 text-gray-600">Get forecasts generated using state-of-the-art LSTM and ML models.</p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+        <div class="bg-white p-7 rounded-[24px] shadow-[0_16px_36px_rgba(15,23,42,0.08)] text-center border border-slate-100">
+          <div class="mx-auto mb-4 h-12 w-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-xl">FX</div>
           <h4 class="text-xl font-semibold text-blue-600">Technical Indicators</h4>
           <p class="mt-2 text-gray-600">Analyze with RSI, MACD, EMA and more, built into every chart.</p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+        <div class="bg-white p-7 rounded-[24px] shadow-[0_16px_36px_rgba(15,23,42,0.08)] text-center border border-slate-100">
+          <div class="mx-auto mb-4 h-12 w-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl">UX</div>
           <h4 class="text-xl font-semibold text-blue-600">Secure User Dashboard</h4>
           <p class="mt-2 text-gray-600">Save your predictions, manage your profile, and track your portfolio securely.</p>
         </div>
@@ -152,28 +243,56 @@
     </div>
   </section>
 
-  <section class="bg-blue-600 py-16 text-white text-center">
+  <section class="bg-blue-600 py-16 text-white text-center px-4">
     <h2 class="text-3xl font-bold mb-4">Join Thousands of Smart Investors</h2>
     <p class="text-lg mb-6">Sign up now and get your predictions free!</p>
-    <a href="/signup" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Sign Up</a>
+    <a href="/signup" class="bg-white text-blue-600 px-6 py-3 rounded-2xl font-semibold hover:bg-gray-100 shadow-[0_12px_30px_rgba(15,23,42,0.18)]">Sign Up</a>
   </section>
 
   <footer class="bg-blue-50 py-6 mt-16">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-700">
-      <p>&copy; 2025 CapitalBlue. All rights reserved.</p>
-      <div class="space-x-4 mt-4 md:mt-0">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-gray-700 gap-4">
+      <p class="text-center">&copy; 2025 CapitalBlue. All rights reserved.</p>
+      <div class="flex flex-wrap justify-center gap-4 mt-0">
         <a href="#" class="hover:text-blue-600">Privacy Policy</a>
         <a href="#" class="hover:text-blue-600">Terms</a>
         <a href="#news" class="hover:text-blue-600">Contact</a>
       </div>
     </div>
   </footer>
+  </div>
 
   <script>
+    const mobileMenuButton = document.getElementById('mobileMenuButton');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const desktopProfileButton = document.getElementById('desktopProfileButton');
+    const desktopProfileMenu = document.getElementById('desktopProfileMenu');
+
+    if (mobileMenuButton && mobileMenu) {
+      mobileMenuButton.addEventListener('click', () => {
+        const isHidden = mobileMenu.classList.contains('hidden');
+        mobileMenu.classList.toggle('hidden');
+        mobileMenuButton.setAttribute('aria-expanded', String(isHidden));
+      });
+    }
+
+    if (desktopProfileButton && desktopProfileMenu) {
+      desktopProfileButton.addEventListener('click', () => {
+        const isHidden = desktopProfileMenu.classList.contains('hidden');
+        desktopProfileMenu.classList.toggle('hidden');
+        desktopProfileButton.setAttribute('aria-expanded', String(isHidden));
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!desktopProfileButton.contains(event.target) && !desktopProfileMenu.contains(event.target)) {
+          desktopProfileMenu.classList.add('hidden');
+          desktopProfileButton.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
     setInterval(() => {
       window.location.reload();
     }, 120000);
   </script>
 </body>
 </html>
-

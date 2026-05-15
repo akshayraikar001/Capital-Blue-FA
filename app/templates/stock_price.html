@@ -15,25 +15,27 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-900">
-  <div class="max-w-3xl mx-auto py-12 px-6 text-center fade-in">
-    <h2 class="text-3xl font-bold text-blue-600 mb-6">{{ symbol }} Stock Price</h2>
+<body class="bg-gray-100 text-gray-900 overflow-x-hidden">
+  <div class="max-w-3xl mx-auto py-10 sm:py-12 px-4 sm:px-6 text-center fade-in">
+    <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 mb-6">{{ symbol }} Stock Price</h2>
 
     {% if price %}
-      <div class="bg-white rounded-xl shadow-md p-6">
-        <p class="text-xl mb-2">Current price of <strong>{{ symbol }}</strong>:
+      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <p class="text-lg sm:text-xl mb-2 break-words">Current price of <strong>{{ symbol }}</strong>:
           <span class="text-green-600 font-semibold">${{ price }}</span>
         </p>
 
         {% if dates_json != "[]" and prices_json != "[]" %}
-          <canvas id="stockChart" class="mt-6"></canvas>
+          <div class="mt-6 overflow-x-auto">
+            <canvas id="stockChart" class="min-h-[260px]"></canvas>
+          </div>
         {% endif %}
       </div>
     {% elif error %}
-      <p class="text-red-600 font-semibold text-lg">{{ error }}</p>
+      <p class="text-red-600 font-semibold text-base sm:text-lg">{{ error }}</p>
     {% endif %}
 
-    <a href="/home_user/" class="mt-8 inline-block text-blue-600 underline text-lg">&larr; Back to Home</a>
+    <a href="/home_user/" class="mt-8 inline-block text-blue-600 underline text-base sm:text-lg">&larr; Back to Home</a>
   </div>
 
   {% if dates_json != "[]" and prices_json != "[]" %}
@@ -66,4 +68,3 @@
   {% endif %}
 </body>
 </html>
-

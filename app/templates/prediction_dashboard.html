@@ -11,17 +11,26 @@
         #stockChart { height: 350px !important; }
         .recommendation-badge { font-size: 1rem; padding: 0.5em 1em; }
         a { text-decoration: none; color: #007bff; }
+        .dashboard-shell { overflow-x: hidden; }
+        .chart-wrap { position: relative; width: 100%; overflow-x: auto; }
+        @media (max-width: 767.98px) {
+            .metric-card { padding: 14px; }
+            #stockChart { height: 280px !important; }
+            .mobile-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+            .mobile-stack > * { width: 100%; }
+            .headline-block h4 { font-size: 1.2rem; }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light dashboard-shell">
 <a href="/home_user/" style="display:inline-block;background:#2563eb;color:#fff;padding:8px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 8px 14px rgba(37,99,235,.22);margin:14px 0 18px 14px;">&larr; Back</a>
 <div class="container py-4">
     <h2 class="mb-3 text-center text-primary">Stock Price Prediction</h2>
 
     <form method="post" class="mb-4" action="/prediction">
-        <div class="input-group">
+        <div class="input-group mobile-stack">
             <input type="text" name="symbol" class="form-control" placeholder="Enter stock symbol (e.g. AAPL)" value="{{ symbol or '' }}">
-            <div class="input-group-text">
+            <div class="input-group-text justify-content-center">
                 <input class="form-check-input mt-0" type="checkbox" name="realtime" id="realtimeCheck" {% if realtime_flag %}checked{% endif %}>
                 <label class="form-check-label ms-2" for="realtimeCheck">Real-time Chart</label>
             </div>
@@ -36,9 +45,9 @@
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card p-3 metric-card">
-                <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex justify-content-between align-items-start headline-block">
                     <div>
-                        <h4>{{ symbol or "" }} <small class="text-muted">Last: <span id="lastClose">{{ last_close if last_close is not none else "-" }}</span></small></h4>
+                        <h4 class="mb-2">{{ symbol or "" }} <small class="text-muted d-block d-sm-inline">Last: <span id="lastClose">{{ last_close if last_close is not none else "-" }}</span></small></h4>
                         <div><strong>Next prediction:</strong> <span id="nextPred">{{ pred_next_price if pred_next_price is not none else "-" }}</span></div>
                         <div><strong>Recommendation:</strong>
                             <span id="recBadge" class="badge recommendation-badge {% if recommendation == 'Buy' %}bg-success{% elif recommendation == 'Sell' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
@@ -47,7 +56,9 @@
                         </div>
                     </div>
                 </div>
-                <canvas id="stockChart" class="mt-3"></canvas>
+                <div class="chart-wrap mt-3">
+                    <canvas id="stockChart"></canvas>
+                </div>
             </div>
         </div>
 
