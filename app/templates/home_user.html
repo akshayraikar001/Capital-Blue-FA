@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CapitalBlue - Smarter Stock Predictions</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -28,15 +29,17 @@
         </button>
       </div>
 
-      <div class="hidden md:flex md:items-center md:justify-between md:relative min-h-[76px]">
-        <h1 class="text-3xl font-extrabold text-blue-600 leading-none whitespace-nowrap">Capital<span class="text-blue-400">Blue</span></h1>
-        <ul class="flex flex-wrap items-center justify-center gap-8 font-medium text-[17px] text-slate-700 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+      <div class="hidden md:grid md:grid-cols-[1fr_auto_1fr] md:items-center gap-8 min-h-[64px]">
+        <div class="flex items-center">
+          <h1 class="text-3xl font-extrabold text-blue-600 leading-none whitespace-nowrap">Capital<span class="text-blue-400">Blue</span></h1>
+        </div>
+        <ul class="flex flex-wrap items-center justify-center gap-8 font-medium text-[17px] text-slate-700">
           <li><a href="#" class="hover:text-blue-600">Home</a></li>
           <li><a href="#predictions" class="hover:text-blue-600">Predictions</a></li>
           <li><a href="#news" class="hover:text-blue-600">News</a></li>
           <li><a href="#features" class="hover:text-blue-600">Features</a></li>
         </ul>
-        <div class="relative shrink-0 ml-auto">
+        <div class="relative shrink-0 justify-self-end">
           <button
             type="button"
             id="desktopProfileButton"
