@@ -64,13 +64,40 @@ def fetch_quote(symbol: str) -> dict:
     if cached is not None:
         return dict(cached)
 
-    response = http_session.get(
-        "https://finnhub.io/api/v1/quote",
-        params={"symbol": symbol, "token": FINNHUB_API_KEY},
-        timeout=15,
-    )
-    response.raise_for_status()
-    payload = response.json()
+    payload = None
+    if FINNHUB_API_KEY:
+        try:
+            response = http_session.get(
+                "https://finnhub.io/api/v1/quote",
+                params={"symbol": symbol, "token": FINNHUB_API_KEY},
+                timeout=15,
+            )
+            response.raise_for_status()
+            candidate = response.json() or {}
+            if candidate.get("c") not in (None, 0):
+                payload = candidate
+        except Exception:
+            payload = None
+
+    if payload is None:
+        ticker = yf.Ticker(symbol)
+        fast_info = getattr(ticker, "fast_info", None) or {}
+        history = ticker.history(period="5d", interval="1d")
+        if history is None or history.empty:
+            raise RuntimeError("Unable to fetch quote data from providers.")
+
+        last_close = float(history["Close"].iloc[-1])
+        previous_close = float(history["Close"].iloc[-2]) if len(history) > 1 else float(fast_info.get("previousClose") or last_close)
+        payload = {
+            "c": float(fast_info.get("lastPrice") or last_close),
+            "h": float(fast_info.get("dayHigh") or history["High"].iloc[-1] or last_close),
+            "l": float(fast_info.get("dayLow") or history["Low"].iloc[-1] or last_close),
+            "o": float(fast_info.get("open") or history["Open"].iloc[-1] or previous_close),
+            "pc": previous_close,
+        }
+        payload["d"] = round(payload["c"] - payload["pc"], 2)
+        payload["dp"] = round(((payload["c"] - payload["pc"]) / payload["pc"]) * 100.0, 2) if payload["pc"] else 0.0
+
     _cache_set(cache_key, ttl_seconds=30, value=payload)
     return dict(payload)
 

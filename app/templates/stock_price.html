@@ -3,65 +3,288 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ symbol }} Stock Price</title>
+  <title>{{ symbol or "Stock" }} Price</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
+    :root {
+      --surface: rgba(255, 255, 255, 0.94);
+      --border-soft: rgba(148, 163, 184, 0.18);
+      --text-main: #0f172a;
+      --text-soft: #64748b;
+      --blue-main: #2563eb;
+      --blue-deep: #1d4ed8;
     }
-    .fade-in {
-      animation: fadeIn 1s ease-out;
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 34%),
+        linear-gradient(180deg, #f6f9ff 0%, #f8fafc 42%, #f5f7fb 100%);
+      color: var(--text-main);
+    }
+    .glass-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+    }
+    .tooltip-card {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, calc(-100% - 12px));
+      transition: opacity 120ms ease;
+      min-width: 150px;
+      border-radius: 14px;
+      border: 1px solid rgba(96, 165, 250, 0.22);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+      overflow: hidden;
+    }
+    .tooltip-body {
+      padding: 0.8rem;
+    }
+    .tooltip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+      font-size: 0.88rem;
+    }
+    .tooltip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #dbeafe;
+      font-weight: 700;
+    }
+    .tooltip-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      background: #2563eb;
+    }
+    .tooltip-value {
+      color: #ffffff;
+      font-weight: 800;
     }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-900 overflow-x-hidden">
-  <div class="max-w-3xl mx-auto py-10 sm:py-12 px-4 sm:px-6 text-center fade-in">
-    <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 mb-6">{{ symbol }} Stock Price</h2>
+<body class="overflow-x-hidden">
+  <a href="/home_user/" class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-[0_10px_20px_rgba(37,99,235,0.18)] mt-4 ml-4">&larr; Back</a>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div class="text-center mb-6">
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-600 tracking-tight">{{ symbol or "Stock" }} Price Snapshot</h1>
+      <p class="mt-3 text-slate-500 text-sm sm:text-base">A clean view of recent pricing, directional move, and core company metrics.</p>
+    </div>
 
     {% if price %}
-      <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
-        <p class="text-lg sm:text-xl mb-2 break-words">Current price of <strong>{{ symbol }}</strong>:
-          <span class="text-green-600 font-semibold">${{ price }}</span>
-        </p>
-
-        {% if dates_json != "[]" and prices_json != "[]" %}
-          <div class="mt-6 overflow-x-auto">
-            <canvas id="stockChart" class="min-h-[260px]"></canvas>
+      <div class="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
+        <section class="glass-card rounded-[28px] p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <p class="text-xs font-extrabold uppercase tracking-[0.28em] text-blue-500">Live Price</p>
+              <div class="mt-3 flex items-end gap-3 flex-wrap">
+                <h2 class="text-4xl sm:text-5xl font-extrabold text-slate-950">{{ price_formatted }}</h2>
+                {% if change is not none %}
+                  <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold {% if change > 0 %}bg-emerald-50 text-emerald-600{% elif change < 0 %}bg-red-50 text-red-500{% else %}bg-slate-100 text-slate-500{% endif %}">
+                    {{ "%+.2f"|format(change) }}{% if change_pct is not none %} ({{ "%+.2f"|format(change_pct) }}%){% endif %}
+                  </span>
+                {% endif %}
+              </div>
+              <p class="mt-2 text-slate-500 font-medium">Current price of <span class="font-extrabold text-slate-900">{{ symbol }}</span></p>
+            </div>
           </div>
-        {% endif %}
+
+          {% if dates_json != "[]" and prices_json != "[]" %}
+            <div class="mt-6 rounded-[24px] border border-slate-200/80 bg-white p-4 sm:p-5">
+              <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                <div>
+                  <h3 class="text-lg font-extrabold text-slate-900">Recent Price Movement</h3>
+                  <p class="text-sm text-slate-500">Last 7 price points shown as a smooth trend line.</p>
+                </div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+                  <span class="inline-flex h-2.5 w-2.5 rounded-full bg-blue-600"></span>
+                  {{ symbol }}
+                </div>
+              </div>
+              <div id="chartShell" class="relative overflow-hidden">
+                <canvas id="stockChart" class="min-h-[290px]"></canvas>
+              </div>
+            </div>
+          {% endif %}
+        </section>
+
+        <aside class="space-y-4">
+          <div class="glass-card rounded-[28px] p-5 sm:p-6">
+            <h3 class="text-lg font-extrabold text-slate-900 mb-4">Market Stats</h3>
+            <div class="grid gap-3">
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">Open</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.open }}</span>
+              </div>
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">Prev Close</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.previous_close }}</span>
+              </div>
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">Volume</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.volume }}</span>
+              </div>
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">Market Cap</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.market_cap }}</span>
+              </div>
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">52W High</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.fifty_two_high }}</span>
+              </div>
+              <div class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 flex items-center justify-between gap-4">
+                <span class="text-sm font-bold text-slate-500 uppercase tracking-[0.12em]">52W Low</span>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900">{{ metrics_display.fifty_two_low }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-[28px] p-5 sm:p-6">
+            <h3 class="text-lg font-extrabold text-slate-900 mb-4">Quick Read</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-2xl bg-blue-50 px-4 py-4">
+                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-blue-600">Symbol</p>
+                <p class="mt-2 text-2xl font-extrabold text-slate-950">{{ symbol }}</p>
+              </div>
+              <div class="rounded-2xl {% if change > 0 %}bg-emerald-50{% elif change < 0 %}bg-red-50{% else %}bg-slate-100{% endif %} px-4 py-4">
+                <p class="text-xs font-extrabold uppercase tracking-[0.18em] {% if change > 0 %}text-emerald-600{% elif change < 0 %}text-red-500{% else %}text-slate-500{% endif %}">Direction</p>
+                <p class="mt-2 text-2xl font-extrabold {% if change > 0 %}text-emerald-700{% elif change < 0 %}text-red-600{% else %}text-slate-700{% endif %}">
+                  {% if change > 0 %}Up{% elif change < 0 %}Down{% else %}Flat{% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     {% elif error %}
-      <p class="text-red-600 font-semibold text-base sm:text-lg">{{ error }}</p>
+      <div class="glass-card rounded-[28px] p-6 sm:p-8 text-center">
+        <p class="text-red-600 font-bold text-lg">{{ error }}</p>
+      </div>
+    {% else %}
+      <div class="glass-card rounded-[28px] p-6 sm:p-8 text-center">
+        <p class="text-slate-600 font-semibold text-lg">Search for a stock to see its latest price and trend.</p>
+      </div>
     {% endif %}
-
-    <a href="/home_user/" class="mt-8 inline-block text-blue-600 underline text-base sm:text-lg">&larr; Back to Home</a>
   </div>
 
   {% if dates_json != "[]" and prices_json != "[]" %}
   <script>
+    const labels = {{ dates_json | safe }};
+    const prices = {{ prices_json | safe }};
+
+    const externalTooltipPlugin = {
+      id: 'externalTooltipPlugin',
+      afterInit(chart) {
+        let tooltipEl = chart.canvas.parentNode.querySelector('.tooltip-card');
+        if (!tooltipEl) {
+          tooltipEl = document.createElement('div');
+          tooltipEl.className = 'tooltip-card';
+          chart.canvas.parentNode.style.position = 'relative';
+          chart.canvas.parentNode.appendChild(tooltipEl);
+        }
+      }
+    };
+
     const ctx = document.getElementById('stockChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.28)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.02)');
+
     new Chart(ctx, {
       type: 'line',
+      plugins: [externalTooltipPlugin],
       data: {
-        labels: {{ dates_json | safe }},
+        labels,
         datasets: [{
-          label: '{{ symbol }} - Last 7 Days',
-          data: {{ prices_json | safe }},
+          label: '{{ symbol }} Price',
+          data: prices,
           borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.2)',
+          backgroundColor: gradient,
           fill: true,
-          tension: 0.4,
-          pointRadius: 3
+          tension: 0.42,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#2563eb',
+          pointBorderWidth: 2
         }]
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false,
+            external(context) {
+              const { chart, tooltip } = context;
+              const tooltipEl = chart.canvas.parentNode.querySelector('.tooltip-card');
+              if (!tooltipEl) {
+                return;
+              }
+              if (tooltip.opacity === 0 || !tooltip.dataPoints?.length) {
+                tooltipEl.style.opacity = '0';
+                return;
+              }
+
+              const point = tooltip.dataPoints[0];
+              tooltipEl.innerHTML = `
+                <div class="tooltip-body">
+                  <div class="tooltip-row">
+                    <span class="tooltip-label">
+                      <span class="tooltip-dot"></span>
+                      {{ symbol }} Price
+                    </span>
+                    <span class="tooltip-value">$${Number(point.parsed.y).toFixed(2)}</span>
+                  </div>
+                </div>
+              `;
+
+              const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+              tooltipEl.style.opacity = '1';
+              tooltipEl.style.left = `${positionX + tooltip.caretX}px`;
+              tooltipEl.style.top = `${positionY + tooltip.caretY}px`;
+            }
+          }
+        },
         scales: {
+          x: {
+            display: false,
+            grid: {
+              display: false
+            },
+            border: {
+              display: false
+            }
+          },
           y: {
-            beginAtZero: false
+            beginAtZero: false,
+            ticks: {
+              color: '#64748b',
+              callback(value) {
+                return `$${Number(value).toFixed(0)}`;
+              }
+            },
+            grid: {
+              color: 'rgba(148, 163, 184, 0.16)'
+            },
+            border: {
+              display: false
+            }
           }
         }
       }
