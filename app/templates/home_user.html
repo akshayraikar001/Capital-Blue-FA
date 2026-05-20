@@ -170,6 +170,66 @@
     </div>
   </section>
 
+  <section class="px-4 py-12 md:px-6 md:py-14 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500 mb-2">Watchlist</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">Your Saved Symbols</h2>
+        </div>
+        <p class="text-sm text-slate-500">Add stocks from the prediction page to keep your best ideas close.</p>
+      </div>
+
+      {% if watchlist_quotes %}
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for stock in watchlist_quotes %}
+        <div class="relative rounded-[26px] border border-slate-100 bg-white p-6 shadow-[0_16px_38px_rgba(15,23,42,0.08)] hover:shadow-[0_22px_50px_rgba(37,99,235,0.12)] transition">
+          <form method="post" action="/watchlist/remove" class="absolute right-4 top-4 z-10">
+            <input type="hidden" name="symbol" value="{{ stock.symbol }}">
+            <button
+              type="submit"
+              class="inline-flex items-center rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-semibold text-slate-400 hover:border-slate-300 hover:text-slate-600 transition"
+              title="Remove from watchlist"
+              aria-label="Remove {{ stock.symbol }} from watchlist"
+            >
+              Remove
+            </button>
+          </form>
+          <a href="/prediction?symbol={{ stock.symbol }}" class="block">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Saved Ticker</p>
+              <h3 class="text-xl font-bold text-slate-900">{{ stock.symbol }}</h3>
+            </div>
+            <div class="h-11 w-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold">{{ stock.symbol[:1] }}</div>
+          </div>
+          <div class="mt-5 flex items-center justify-between gap-4">
+            <p class="text-3xl font-extrabold text-slate-900">${{ stock.current_price if stock.current_price is not none else "-" }}</p>
+            {% if stock.change > 0 %}
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-green-600 font-semibold">+ {{ stock.change }}</span>
+            {% elif stock.change < 0 %}
+            <span class="rounded-full bg-red-50 px-3 py-1 text-red-600 font-semibold">{{ stock.change }}</span>
+            {% else %}
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-gray-500 font-semibold">-</span>
+            {% endif %}
+          </div>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
+            <span class="text-slate-500">Open in prediction desk</span>
+            <span class="font-semibold text-blue-600">View</span>
+          </div>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rounded-[26px] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+        <p class="text-lg font-semibold text-slate-800">Your watchlist is empty.</p>
+        <p class="mt-2 text-sm text-slate-500">Save a symbol from the prediction page and it will show up here for quick access.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
   <div id="news" class="max-w-7xl mx-auto px-4 sm:px-6 py-10 bg-gray-50">
     <div class="mb-8 text-center">
       <p class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500 mb-3">Intel feed</p>

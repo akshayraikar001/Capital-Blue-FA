@@ -7,36 +7,676 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
-        .metric-card { border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        :root {
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-strong: #ffffff;
+            --border-soft: rgba(148, 163, 184, 0.22);
+            --text-main: #0f172a;
+            --text-soft: #64748b;
+            --blue-main: #2563eb;
+            --blue-deep: #1d4ed8;
+            --shadow-soft: 0 18px 45px rgba(37, 99, 235, 0.08);
+            --shadow-card: 0 16px 38px rgba(15, 23, 42, 0.08);
+        }
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 34%),
+                linear-gradient(180deg, #f6f9ff 0%, #f8fafc 38%, #f5f7fb 100%);
+            color: var(--text-main);
+        }
+        .metric-card {
+            border-radius: 24px;
+            padding: 1.2rem;
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-card);
+        }
         .gauge-small { height: 220px; }
         #stockChart { height: 350px !important; }
-        .recommendation-badge { font-size: 1rem; padding: 0.5em 1em; }
+        .recommendation-badge {
+            font-size: 0.95rem;
+            padding: 0.6em 1em;
+            border-radius: 999px;
+            min-width: 92px;
+        }
         a { text-decoration: none; color: #007bff; }
         .dashboard-shell { overflow-x: hidden; }
         .chart-wrap { position: relative; width: 100%; overflow-x: auto; }
+        .chart-stage {
+            position: relative;
+        }
+        .chart-loading {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,251,255,0.96));
+            z-index: 3;
+            overflow: hidden;
+        }
+        .chart-loading.is-active {
+            display: flex;
+        }
+        .chart-loading::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, transparent 0%, rgba(37, 99, 235, 0.08) 50%, transparent 100%);
+            transform: translateX(-100%);
+            animation: chartShimmer 1.2s linear infinite;
+        }
+        .chart-loading-inner {
+            position: relative;
+            width: min(100%, 720px);
+            height: 100%;
+            padding: 1.25rem 1.1rem 1rem;
+        }
+        .chart-loading-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            color: var(--blue-deep);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.08);
+        }
+        .chart-loading-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+        }
+        .chart-loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #2563eb;
+            animation: pulseDot 0.9s ease-in-out infinite;
+        }
+        .chart-loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .chart-loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+        .chart-loading-grid {
+            position: absolute;
+            left: 1.1rem;
+            right: 1.1rem;
+            top: 4.2rem;
+            bottom: 1.2rem;
+            border-radius: 18px;
+            background:
+                repeating-linear-gradient(
+                    to bottom,
+                    rgba(148, 163, 184, 0.18) 0,
+                    rgba(148, 163, 184, 0.18) 1px,
+                    transparent 1px,
+                    transparent 56px
+                );
+        }
+        .chart-loading-line {
+            position: absolute;
+            left: 1.5rem;
+            right: 1.5rem;
+            bottom: 2rem;
+            height: 150px;
+        }
+        .chart-loading-line svg {
+            width: 100%;
+            height: 100%;
+        }
+        .chart-loading-line .line-bg {
+            fill: none;
+            stroke: rgba(37, 99, 235, 0.2);
+            stroke-width: 3;
+        }
+        .chart-loading-line .line-fg {
+            fill: none;
+            stroke: #2563eb;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 320;
+            stroke-dashoffset: 320;
+            animation: drawLine 1.3s ease-in-out infinite;
+        }
+        .chart-loading-line .line-pred {
+            fill: none;
+            stroke: #ef4444;
+            stroke-width: 3;
+            stroke-dasharray: 8 8;
+            opacity: 0;
+            animation: fadePred 1.3s ease-in-out infinite;
+        }
+        @keyframes chartShimmer {
+            100% { transform: translateX(100%); }
+        }
+        @keyframes drawLine {
+            0% { stroke-dashoffset: 320; opacity: 0.6; }
+            35% { stroke-dashoffset: 0; opacity: 1; }
+            100% { stroke-dashoffset: -320; opacity: 0.85; }
+        }
+        @keyframes fadePred {
+            0%, 35% { opacity: 0; }
+            55%, 100% { opacity: 1; }
+        }
+        @keyframes pulseDot {
+            0%, 100% { transform: translateY(0); opacity: 0.55; }
+            50% { transform: translateY(-2px); opacity: 1; }
+        }
+        .page-shell {
+            max-width: 1320px;
+        }
+        .page-title {
+            margin: 0 0 1rem;
+            text-align: center;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            line-height: 1.04;
+            color: #1e63f0;
+        }
+        .action-form {
+            padding: 1rem;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1.25rem;
+        }
+        .quick-symbols {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin-bottom: 0.9rem;
+        }
+        .symbol-chip {
+            border: 1px solid rgba(37, 99, 235, 0.14);
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            color: var(--blue-deep);
+            border-radius: 999px;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+        }
+        .control-row {
+            display: grid;
+            grid-template-columns: minmax(320px, 1fr) auto auto auto;
+            gap: 0;
+            align-items: stretch;
+        }
+        .premium-input {
+            display: block;
+            width: 100%;
+            min-height: 58px;
+            height: 58px;
+            border-radius: 18px 0 0 18px !important;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            background: rgba(255,255,255,0.96);
+            padding: 0 1rem;
+            font-size: 1.02rem;
+            color: var(--text-main);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+        }
+        .premium-input::placeholder {
+            color: #94a3b8;
+        }
+        .premium-input:focus {
+            border-color: rgba(37, 99, 235, 0.35);
+            box-shadow: 0 0 0 0.18rem rgba(37, 99, 235, 0.12);
+        }
+        .horizon-select {
+            display: block;
+            min-height: 58px;
+            height: 58px;
+            border-top: 1px solid rgba(148, 163, 184, 0.24);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+            border-left: none;
+            border-right: none;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            padding: 0 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .realtime-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 58px;
+            height: 58px;
+            border-top: 1px solid rgba(148, 163, 184, 0.24);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+            border-left: none;
+            border-right: none;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            padding: 0 1rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+        .predict-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 58px;
+            height: 58px;
+            border-radius: 0 18px 18px 0 !important;
+            padding: 0 1.35rem;
+            font-weight: 700;
+            border: none;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 14px 28px rgba(37, 99, 235, 0.2);
+        }
+        .predict-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        }
+        .predict-btn.is-loading {
+            opacity: 0.92;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,0.45);
+            border-top-color: #ffffff;
+            border-radius: 999px;
+            display: inline-block;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .alert {
+            border-radius: 18px;
+            border-width: 1px;
+            padding: 1rem 1.1rem;
+            box-shadow: 0 10px 24px rgba(239, 68, 68, 0.07);
+        }
+        .main-chart-card {
+            padding: 1.35rem;
+        }
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        .summary-tile {
+            padding: 1rem 1.05rem;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .summary-label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-soft);
+            margin-bottom: 0.45rem;
+        }
+        .summary-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--text-main);
+        }
+        .summary-subtext {
+            margin-top: 0.28rem;
+            color: var(--text-soft);
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+        .metrics-list {
+            display: grid;
+            gap: 0.7rem;
+        }
+        .forecast-block {
+            margin-top: 1.1rem;
+        }
+        .forecast-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+        }
+        .forecast-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+        }
+        .forecast-subtitle {
+            font-size: 0.86rem;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.8rem;
+        }
+        .forecast-card {
+            padding: 0.95rem 0.9rem;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+        .forecast-day {
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-soft);
+            margin-bottom: 0.4rem;
+        }
+        .forecast-date {
+            font-size: 0.83rem;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 0.45rem;
+        }
+        .forecast-price {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.1;
+        }
+        .forecast-empty {
+            padding: 1rem 1.1rem;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+        .watchlist-btn {
+            border: 1px solid rgba(37, 99, 235, 0.16);
+            background: linear-gradient(180deg, #ffffff, #eff6ff);
+            color: var(--blue-deep);
+            border-radius: 14px;
+            padding: 0.65rem 0.95rem;
+            font-size: 0.86rem;
+            font-weight: 800;
+        }
+        .watchlist-btn.is-saving {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        .watchlist-btn[disabled] {
+            opacity: 0.7;
+            cursor: default;
+        }
+        .metric-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.7rem 0.8rem;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+        .metric-row strong {
+            font-size: 0.9rem;
+            color: var(--text-soft);
+            font-weight: 700;
+        }
+        .metric-row span {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .gauge-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .gauge-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+        .gauge-legend {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .gauge-pill {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+        }
+        .gauge-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+        .gauge-dot-buy { background: #28a745; }
+        .gauge-dot-hold { background: #ffc107; }
+        .gauge-dot-sell { background: #dc3545; }
+        .gauge-dot-muted { background: #94a3b8; }
+        .gauge-center-label {
+            position: absolute;
+            left: 50%;
+            bottom: 26px;
+            transform: translateX(-50%);
+            min-width: 150px;
+            text-align: center;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            padding: 0.8rem 1rem 0.7rem;
+        }
+        .gauge-center-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+        .gauge-center-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #0f172a;
+        }
+        .gauge-center-meta {
+            font-size: 0.82rem;
+            color: #475569;
+            font-weight: 700;
+            margin-top: 0.18rem;
+        }
+        .gauge-center-label.is-muted .gauge-center-value,
+        .gauge-center-label.is-muted .gauge-center-meta,
+        .gauge-center-label.is-muted .gauge-center-title {
+            color: #64748b;
+        }
+        .news-relevance-card,
+        .history-card {
+            margin-top: 1rem;
+        }
+        .news-relevance-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.05rem;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            margin-bottom: 1rem;
+        }
+        .news-relevance-banner.support { border-color: rgba(34, 197, 94, 0.22); }
+        .news-relevance-banner.conflict { border-color: rgba(239, 68, 68, 0.22); }
+        .news-relevance-banner.mixed { border-color: rgba(245, 158, 11, 0.22); }
+        .news-relevance-title {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .news-relevance-meta {
+            font-size: 0.82rem;
+            color: var(--text-soft);
+            font-weight: 700;
+        }
+        .news-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 0.28rem 0.65rem;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .news-chip.support { background: #ecfdf3; color: #15803d; }
+        .news-chip.conflict { background: #fef2f2; color: #b91c1c; }
+        .news-chip.mixed { background: #fffbeb; color: #b45309; }
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+        .history-item {
+            padding: 1rem;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+        .history-symbol {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .history-meta,
+        .history-value {
+            font-size: 0.84rem;
+            color: var(--text-soft);
+            font-weight: 700;
+            margin-top: 0.28rem;
+        }
+        .chart-tooltip {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+            border: 1px solid rgba(96, 165, 250, 0.22);
+            border-radius: 14px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+            color: #eff6ff;
+            min-width: 170px;
+            overflow: hidden;
+        }
+        .chart-tooltip-body {
+            padding: 0.8rem;
+        }
+        .chart-tooltip-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+            font-size: 0.88rem;
+        }
+        .chart-tooltip-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #dbeafe;
+            font-weight: 700;
+        }
+        .chart-tooltip-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+        .chart-tooltip-value {
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+        }
         @media (max-width: 767.98px) {
             .metric-card { padding: 14px; }
             #stockChart { height: 280px !important; }
             .mobile-stack { display: flex; flex-direction: column; gap: 0.75rem; }
             .mobile-stack > * { width: 100%; }
-            .headline-block h4 { font-size: 1.2rem; }
+            .control-row {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .premium-input,
+            .predict-btn { border-radius: 18px !important; }
+            .horizon-select {
+                border: 1px solid rgba(148, 163, 184, 0.24);
+                border-radius: 18px;
+            }
+            .realtime-toggle {
+                border: 1px solid rgba(148, 163, 184, 0.24);
+                border-radius: 18px;
+                justify-content: center;
+            }
+            .summary-strip { grid-template-columns: 1fr; }
+            .forecast-grid { grid-template-columns: 1fr; }
+            .history-grid { grid-template-columns: 1fr; }
+            .gauge-center-label {
+                min-width: 138px;
+                bottom: 24px;
+                padding: 0.7rem 0.85rem 0.65rem;
+            }
         }
     </style>
 </head>
 <body class="bg-light dashboard-shell">
-<a href="/home_user/" style="display:inline-block;background:#2563eb;color:#fff;padding:8px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 8px 14px rgba(37,99,235,.22);margin:14px 0 18px 14px;">&larr; Back</a>
-<div class="container py-4">
-    <h2 class="mb-3 text-center text-primary">Stock Price Prediction</h2>
+<a href="/home_user/" style="display:inline-flex;align-items:center;background:#2563eb;color:#fff;padding:8px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 8px 14px rgba(37,99,235,.18);margin:14px 0 18px 14px;">&larr; Back</a>
+<div class="container py-4 page-shell">
+    <h1 class="page-title">Stock Price Prediction</h1>
 
-    <form method="post" class="mb-4" action="/prediction">
-        <div class="input-group mobile-stack">
-            <input type="text" name="symbol" class="form-control" placeholder="Enter stock symbol (e.g. AAPL)" value="{{ symbol or '' }}">
-            <div class="input-group-text justify-content-center">
+    <form method="post" class="action-form" action="/prediction" id="predictionForm">
+        <div class="quick-symbols">
+            {% for quick_symbol in quick_symbols %}
+                <button type="button" class="symbol-chip quick-symbol-btn" data-symbol="{{ quick_symbol }}">{{ quick_symbol }}</button>
+            {% endfor %}
+        </div>
+        <div class="mobile-stack control-row">
+            <input type="text" name="symbol" id="symbolInput" class="form-control premium-input" placeholder="Enter stock symbol (e.g. AAPL)" value="{{ symbol or '' }}">
+            <select name="forecast_horizon" id="forecastHorizon" class="form-select horizon-select">
+                <option value="1" {% if forecast_horizon == 1 %}selected{% endif %}>1 Day</option>
+                <option value="3" {% if forecast_horizon == 3 %}selected{% endif %}>3 Days</option>
+                <option value="5" {% if forecast_horizon == 5 %}selected{% endif %}>5 Days</option>
+            </select>
+            <div class="realtime-toggle">
                 <input class="form-check-input mt-0" type="checkbox" name="realtime" id="realtimeCheck" {% if realtime_flag %}checked{% endif %}>
                 <label class="form-check-label ms-2" for="realtimeCheck">Real-time Chart</label>
             </div>
-            <button class="btn btn-primary" type="submit">Predict</button>
+            <button class="btn btn-primary predict-btn" type="submit" id="predictButton">
+                <span class="predict-label">Predict</span>
+            </button>
         </div>
     </form>
 
@@ -46,39 +686,131 @@
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card p-3 metric-card">
-                <div class="d-flex justify-content-between align-items-start headline-block">
+            <div class="card metric-card main-chart-card">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                     <div>
-                        <h4 class="mb-2">{{ symbol or "" }} <small class="text-muted d-block d-sm-inline">Last: <span id="lastClose">{{ last_close if last_close is not none else "-" }}</span></small></h4>
-                        <div><strong>Next prediction:</strong> <span id="nextPred">{{ pred_next_price if pred_next_price is not none else "-" }}</span></div>
-                        <div><strong>Recommendation:</strong>
-                            <span id="recBadge" class="badge recommendation-badge {% if recommendation == 'Buy' %}bg-success{% elif recommendation == 'Sell' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
-                                {{ recommendation or "-" }}
+                        <div class="panel-title mb-1">{{ symbol or "Forecast Overview" }}</div>
+                        <div class="text-muted" style="font-weight:600;">Historical trend with projected next moves</div>
+                    </div>
+                    {% if symbol %}
+                        <form id="watchlistForm" method="post" action="/watchlist/add">
+                            <input id="watchlistSymbol" type="hidden" name="symbol" value="{{ symbol }}">
+                            <button id="watchlistButton" class="watchlist-btn" type="submit" {% if is_in_watchlist %}disabled{% endif %}>
+                                {% if is_in_watchlist %}Saved to Watchlist{% else %}+ Save to Watchlist{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                <div class="summary-strip mt-3">
+                    <div class="summary-tile">
+                        <span class="summary-label">Last Close</span>
+                        <div class="summary-value" id="lastClose">{{ last_close_formatted }}</div>
+                        <div class="summary-subtext">Most recent confirmed close</div>
+                    </div>
+                    <div class="summary-tile">
+                        <span class="summary-label">Next Prediction</span>
+                        <div class="summary-value" id="nextPred">{{ pred_next_price_formatted }}</div>
+                        <div class="summary-subtext" id="changePct">{{ price_change_pct_formatted if price_change_pct_formatted != '-' else 'Model-estimated next move' }}</div>
+                    </div>
+                    <div class="summary-tile">
+                        <span class="summary-label">Recommendation</span>
+                        <div>
+                            <span id="recBadge" class="badge recommendation-badge {% if recommendation == 'Buy' %}bg-success{% elif recommendation == 'Sell' %}bg-danger{% elif recommendation %}bg-warning text-dark{% else %}text-bg-secondary{% endif %}">
+                                {{ recommendation or "No Signal" }}
                             </span>
                         </div>
+                        <div class="summary-subtext">Current model sentiment</div>
                     </div>
                 </div>
-                <div class="chart-wrap mt-3">
-                    <canvas id="stockChart"></canvas>
+                <div class="chart-stage mt-3">
+                    <div id="chartLoading" class="chart-loading" aria-hidden="true">
+                        <div class="chart-loading-inner">
+                            <div class="chart-loading-label">
+                                <span>Preparing forecast</span>
+                                <span class="chart-loading-dots"><span></span><span></span><span></span></span>
+                            </div>
+                            <div class="chart-loading-grid"></div>
+                            <div class="chart-loading-line">
+                                <svg viewBox="0 0 640 160" preserveAspectRatio="none">
+                                    <path class="line-bg" d="M0 120 C60 90, 110 100, 170 82 S290 48, 360 62 S480 108, 545 72 S605 54, 640 40" />
+                                    <path class="line-fg" d="M0 120 C60 90, 110 100, 170 82 S290 48, 360 62 S480 108, 545 72 S605 54, 640 40" />
+                                    <path class="line-pred" d="M470 98 C510 92, 555 82, 640 52" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="stockChart"></canvas>
+                    </div>
+                </div>
+                <div class="forecast-block">
+                    <div class="forecast-header">
+                        <h3 class="forecast-title">{{ forecast_horizon }}-Day Forecast</h3>
+                        <div class="forecast-subtitle">Projected closes for the next {{ forecast_horizon }} session{% if forecast_horizon != 1 %}s{% endif %}</div>
+                    </div>
+                    <div id="forecastGrid" class="forecast-grid">
+                        {% for card in forecast_cards %}
+                            <div class="forecast-card">
+                                <div class="forecast-day">{{ card.day_label }}</div>
+                                <div class="forecast-date">{{ card.date }}</div>
+                                <div class="forecast-price">{{ card.price_formatted }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div id="forecastEmpty" class="forecast-empty" {% if forecast_cards %}style="display:none;"{% endif %}>
+                        Forecast cards will appear after you run a prediction.
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card p-3 metric-card mb-3">
-                <h6>Stock Metrics</h6>
-                <p class="mb-1">Open: {{ metrics.open if metrics else "-" }}</p>
-                <p class="mb-1">High: {{ metrics.fiftyTwoWeekHigh if metrics else "-" }}</p>
-                <p class="mb-1">Low: {{ metrics.fiftyTwoWeekLow if metrics else "-" }}</p>
-                <p class="mb-1">Volume: {{ metrics.volume if metrics else "-" }}</p>
-                <p class="mb-1">Market Cap: {{ metrics.market_cap if metrics else "-" }}</p>
-                <p class="mb-1">PE Ratio: {{ metrics.trailingPE if metrics else "-" }}</p>
+            <div class="card metric-card mb-3">
+                <div class="panel-title">Stock Metrics</div>
+                <div class="metrics-list">
+                    <div class="metric-row"><strong>Open</strong><span>{{ metrics_display.open if metrics_display else "-" }}</span></div>
+                    <div class="metric-row"><strong>52W High</strong><span>{{ metrics_display.fiftyTwoWeekHigh if metrics_display else "-" }}</span></div>
+                    <div class="metric-row"><strong>52W Low</strong><span>{{ metrics_display.fiftyTwoWeekLow if metrics_display else "-" }}</span></div>
+                    <div class="metric-row"><strong>Volume</strong><span>{{ metrics_display.volume if metrics_display else "-" }}</span></div>
+                    <div class="metric-row"><strong>Market Cap</strong><span>{{ metrics_display.market_cap if metrics_display else "-" }}</span></div>
+                    <div class="metric-row"><strong>PE Ratio</strong><span>{{ metrics_display.trailingPE if metrics_display else "-" }}</span></div>
+                </div>
             </div>
 
-            <div class="card p-3 metric-card">
-                <h6>Analyst Rating</h6>
-                <canvas id="ratingGauge" class="gauge-small"></canvas>
+            <div class="card metric-card">
+                <div class="panel-title">Analyst Rating</div>
+                <div class="gauge-panel">
+                    <div class="gauge-wrap">
+                        <canvas id="ratingGauge" class="gauge-small"></canvas>
+                        <div id="gaugeCenterLabel" class="gauge-center-label">
+                            <div class="gauge-center-title">Top Signal</div>
+                            <div id="gaugePrimaryLabel" class="gauge-center-value">No Signal</div>
+                            <div id="gaugePrimaryMeta" class="gauge-center-meta">Select a stock</div>
+                        </div>
+                    </div>
+                    <div class="gauge-legend">
+                        <div id="gaugeSecondaryOne" class="gauge-pill">
+                            <span class="gauge-dot gauge-dot-muted"></span>
+                            <span>Waiting for data</span>
+                        </div>
+                        <div id="gaugeSecondaryTwo" class="gauge-pill">
+                            <span class="gauge-dot gauge-dot-muted"></span>
+                            <span>Waiting for data</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card metric-card news-relevance-card">
+        <div class="panel-title">News Relevance</div>
+        <div class="news-relevance-banner {{ news_relevance.tone }}">
+            <div>
+                <div class="news-relevance-title">{{ news_relevance.label }}</div>
+                <div class="news-relevance-meta">{{ news_relevance.support_count }} support, {{ news_relevance.conflict_count }} conflict, {{ news_relevance.mixed_count }} mixed</div>
+            </div>
+            <span class="news-chip {{ news_relevance.tone }}">{{ news_relevance.tone }}</span>
         </div>
     </div>
 
@@ -90,6 +822,12 @@
                     <div class="card h-100">
                         {% if item.image %}<img src="{{ item.image }}" class="card-img-top" alt="">{% endif %}
                         <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <span class="news-chip {% if item.alignment == 'Supports' %}support{% elif item.alignment == 'Conflicts' %}conflict{% else %}mixed{% endif %}">
+                                    {{ item.alignment }}
+                                </span>
+                                <span class="text-muted small">{{ item.tone }}</span>
+                            </div>
                             <h6 class="card-title">{{ item.headline }}</h6>
                             {% if item.url %}
                                 <a href="{{ item.url }}" target="_blank" class="btn btn-sm btn-outline-primary">Read</a>
@@ -100,6 +838,24 @@
             {% endfor %}
         {% else %}
             <div class="col-12"><p class="text-muted">No news available for this symbol.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card metric-card history-card">
+        <div class="panel-title">Recent Prediction History</div>
+        {% if prediction_history %}
+            <div class="history-grid">
+                {% for item in prediction_history %}
+                    <div class="history-item">
+                        <div class="history-symbol">{{ item.symbol }}</div>
+                        <div class="history-meta">{{ item.forecast_horizon }}-day horizon | {{ item.recommendation }}</div>
+                        <div class="history-value">Close {{ item.last_close_formatted }} -> Predicted {{ item.predicted_price_formatted }}</div>
+                        <div class="history-meta">Projected change {{ item.delta_pct_formatted }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="forecast-empty">Your recent predictions will appear here after you run a forecast while logged in.</div>
         {% endif %}
     </div>
 </div>
@@ -114,6 +870,18 @@ const predPrices = {{ pred_prices_json | safe }};
 const gaugeValues = {{ gauge_values_json | safe }};
 const symbol = {{ (symbol or '') | tojson }};
 const realtimeEnabled = {{ 'true' if realtime_flag else 'false' }};
+const forecastHorizon = {{ forecast_horizon }};
+const gaugeLabels = ['Buy', 'Hold', 'Sell'];
+const gaugeClasses = ['gauge-dot-buy', 'gauge-dot-hold', 'gauge-dot-sell'];
+const hasGaugeSignal = Boolean(symbol);
+const forecastCards = {{ forecast_cards | tojson }};
+const predictionForm = document.getElementById('predictionForm');
+const symbolInput = document.getElementById('symbolInput');
+const predictButton = document.getElementById('predictButton');
+const chartLoading = document.getElementById('chartLoading');
+const watchlistForm = document.getElementById('watchlistForm');
+const watchlistButton = document.getElementById('watchlistButton');
+const watchlistSymbol = document.getElementById('watchlistSymbol');
 
 const stockChartCanvas = document.getElementById('stockChart');
 const ctx = stockChartCanvas.getContext('2d');
@@ -121,36 +889,161 @@ const gradient = ctx.createLinearGradient(0, 0, 0, 400);
 gradient.addColorStop(0, 'rgba(0,123,255,0.3)');
 gradient.addColorStop(1, 'rgba(0,123,255,0)');
 
+const chartAnnotationsPlugin = {
+    id: 'chartAnnotationsPlugin',
+    afterDatasetsDraw(chart) {
+        const { ctx: chartCtx, chartArea, scales } = chart;
+        if (!chartArea || !baseDates.length || !combinedDates.length) {
+            return;
+        }
+        const lastBaseIndex = Math.max(baseDates.length - 1, 0);
+        const forecastStartIndex = baseDates.length;
+        const currentX = scales.x.getPixelForValue(lastBaseIndex);
+        const forecastX = scales.x.getPixelForValue(forecastStartIndex);
+
+        chartCtx.save();
+        chartCtx.strokeStyle = 'rgba(37, 99, 235, 0.18)';
+        chartCtx.setLineDash([4, 4]);
+        chartCtx.beginPath();
+        chartCtx.moveTo(forecastX, chartArea.top);
+        chartCtx.lineTo(forecastX, chartArea.bottom);
+        chartCtx.stroke();
+        chartCtx.setLineDash([]);
+        chartCtx.fillStyle = '#2563eb';
+        chartCtx.font = '700 11px sans-serif';
+        chartCtx.fillText('Current Price', Math.max(currentX - 30, chartArea.left), chartArea.top + 14);
+        chartCtx.fillText('Forecast Start', Math.min(forecastX + 8, chartArea.right - 80), chartArea.top + 14);
+        chartCtx.restore();
+    }
+};
+
+const externalTooltipPlugin = {
+    id: 'externalTooltipPlugin',
+    afterInit(chart) {
+        let tooltipEl = chart.canvas.parentNode.querySelector('.chart-tooltip');
+        if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.className = 'chart-tooltip';
+            tooltipEl.style.position = 'absolute';
+            tooltipEl.style.pointerEvents = 'none';
+            tooltipEl.style.opacity = '0';
+            tooltipEl.style.transform = 'translate(-50%, calc(-100% - 14px))';
+            tooltipEl.style.transition = 'opacity 120ms ease';
+            chart.canvas.parentNode.style.position = 'relative';
+            chart.canvas.parentNode.appendChild(tooltipEl);
+        }
+    }
+};
+
+function buildActualSeries(labels, prices, forecastCount) {
+    return labels.map((label, index) => ({
+        x: index,
+        y: index < prices.length ? prices[index] : null,
+        label
+    }));
+}
+
+function buildPredictedSeries(actualCount, predLabels, predSeries) {
+    const leadingNulls = Array.from({ length: actualCount }, (_, index) => ({
+        x: index,
+        y: null,
+        label: combinedDates[index] || ''
+    }));
+    const futurePoints = predSeries.map((value, index) => ({
+        x: actualCount + index,
+        y: value,
+        label: predLabels[index] || ''
+    }));
+    return leadingNulls.concat(futurePoints);
+}
+
+function chartLabelForIndex(index, labels) {
+    return labels[index] || '';
+}
+
 let stockChart = new Chart(ctx, {
     type: 'line',
+    plugins: [chartAnnotationsPlugin, externalTooltipPlugin],
     data: {
-        labels: combinedDates,
+        labels: combinedDates.map((_, index) => index),
         datasets: [
             {
                 label: symbol ? `${symbol} Price` : 'Price',
-                data: basePrices.concat(Array(predDates.length).fill(null)),
+                data: buildActualSeries(combinedDates, basePrices, predDates.length),
                 borderColor: 'rgba(0,123,255,1)',
                 backgroundColor: gradient,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 0
+                pointRadius: 0,
+                parsing: false
             },
             {
                 label: 'Predicted Prices',
-                data: Array(baseDates.length).fill(null).concat(predPrices),
+                data: buildPredictedSeries(baseDates.length, predDates, predPrices),
                 borderColor: 'rgba(255,0,0,0.8)',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                parsing: false
             }
         ]
     },
     options: {
         responsive: true,
-        plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } },
+        plugins: {
+            legend: { display: true },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                enabled: false,
+                external(context) {
+                    const { chart, tooltip } = context;
+                    const tooltipEl = chart.canvas.parentNode.querySelector('.chart-tooltip');
+                    if (!tooltipEl) {
+                        return;
+                    }
+
+                    if (tooltip.opacity === 0 || !tooltip.dataPoints?.length) {
+                        tooltipEl.style.opacity = '0';
+                        return;
+                    }
+
+                    const point = tooltip.dataPoints.find((item) => {
+                        const rawPoint = item.raw;
+                        return rawPoint && typeof rawPoint === 'object' && rawPoint.y !== null && rawPoint.y !== undefined;
+                    });
+                    if (!point) {
+                        tooltipEl.style.opacity = '0';
+                        return;
+                    }
+
+                    const rawPoint = point.raw;
+                    const pointValue = rawPoint && typeof rawPoint === 'object' ? rawPoint.y : point.parsed.y;
+                    const dotColor = point.dataset.borderColor || '#2563eb';
+                    const tooltipHeading = point.datasetIndex === 0 ? 'Historical Price' : 'Predicted Price';
+
+                    tooltipEl.innerHTML = `
+                        <div class="chart-tooltip-body">
+                            <div class="chart-tooltip-row">
+                                <span class="chart-tooltip-label">
+                                    <span class="chart-tooltip-dot" style="background:${dotColor}"></span>
+                                    ${tooltipHeading}
+                                </span>
+                                <span class="chart-tooltip-value">$${Number(pointValue).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+                    tooltipEl.style.opacity = '1';
+                    tooltipEl.style.left = `${positionX + tooltip.caretX}px`;
+                    tooltipEl.style.top = `${positionY + tooltip.caretY}px`;
+                }
+            }
+        },
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
         scales: {
-            x: { display: false },
+            x: { type: 'category', display: false },
             y: { beginAtZero: false }
         }
     }
@@ -162,26 +1055,30 @@ async function refreshChart() {
     }
 
     try {
-        const res = await fetch(`/api/stock-data/${symbol}/`);
+        const res = await fetch(`/api/stock-data/${symbol}/?forecast_horizon=${forecastHorizon}`);
         const data = await res.json();
         if (data.error) {
             return;
         }
 
         const refreshedLabels = data.dates.concat(data.pred_dates);
-        stockChart.data.labels = refreshedLabels;
-        stockChart.data.datasets[0].data = data.prices.concat(Array(data.pred_dates.length).fill(null));
-        stockChart.data.datasets[1].data = Array(data.dates.length).fill(null).concat(data.pred_prices);
+        stockChart.data.labels = refreshedLabels.map((_, index) => index);
+        stockChart.data.datasets[0].data = buildActualSeries(refreshedLabels, data.prices, data.pred_dates.length);
+        stockChart.data.datasets[1].data = buildPredictedSeries(data.dates.length, data.pred_dates, data.pred_prices);
         stockChart.update();
 
-        document.getElementById('lastClose').innerText = data.last_close ?? '-';
-        document.getElementById('nextPred').innerText = data.pred_next_price ?? '-';
+        document.getElementById('lastClose').innerText = data.last_close_formatted ?? '-';
+        document.getElementById('nextPred').innerText = data.pred_next_price_formatted ?? '-';
+        document.getElementById('changePct').innerText = data.price_change_pct_formatted ?? 'Model-estimated next move';
 
         const badge = document.getElementById('recBadge');
-        badge.innerText = data.recommendation || '-';
+        badge.innerText = data.recommendation || 'No Signal';
         badge.className = 'badge recommendation-badge ' +
             (data.recommendation === 'Buy' ? 'bg-success' :
-             data.recommendation === 'Sell' ? 'bg-danger' : 'bg-warning text-dark');
+             data.recommendation === 'Sell' ? 'bg-danger' :
+             data.recommendation ? 'bg-warning text-dark' : 'text-bg-secondary');
+
+        renderForecastCards(data.forecast_cards || []);
     } catch (err) {
         console.error("Error fetching stock data:", err);
     }
@@ -195,11 +1092,144 @@ const gaugeCtx = document.getElementById('ratingGauge').getContext('2d');
 new Chart(gaugeCtx, {
     type: 'doughnut',
     data: {
-        labels: ['Buy', 'Hold', 'Sell'],
-        datasets: [{ data: gaugeValues, backgroundColor: ['#28a745', '#ffc107', '#dc3545'] }]
+        labels: hasGaugeSignal ? ['Buy', 'Hold', 'Sell'] : ['No signal'],
+        datasets: [{
+            data: hasGaugeSignal ? gaugeValues : [1],
+            backgroundColor: hasGaugeSignal ? ['#28a745', '#ffc107', '#dc3545'] : ['#cbd5e1'],
+            borderColor: hasGaugeSignal ? '#ffffff' : '#e2e8f0',
+            borderWidth: hasGaugeSignal ? 3 : 1
+        }]
     },
     options: { circumference: 180, rotation: -90, cutout: '75%', plugins: { legend: { display: false } } }
 });
+
+const gaugeCenterLabel = document.getElementById('gaugeCenterLabel');
+const forecastGrid = document.getElementById('forecastGrid');
+const forecastEmpty = document.getElementById('forecastEmpty');
+
+function renderGaugePill(targetId, item) {
+    const target = document.getElementById(targetId);
+    if (!target || !item) {
+        return;
+    }
+    target.innerHTML = `
+        <span class="gauge-dot ${item.className}"></span>
+        <span>${item.label} ${item.value}%</span>
+    `;
+}
+
+function formatForecastDate(dateText) {
+    const parsed = new Date(dateText);
+    if (Number.isNaN(parsed.getTime())) {
+        return dateText;
+    }
+    return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function renderForecastCards(cards) {
+    if (!forecastGrid) {
+        return;
+    }
+
+    forecastGrid.innerHTML = '';
+    if (!cards.length) {
+        if (forecastEmpty) {
+            forecastEmpty.style.display = 'block';
+        }
+        return;
+    }
+
+    if (forecastEmpty) {
+        forecastEmpty.style.display = 'none';
+    }
+
+    cards.forEach((forecastCard, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'forecast-card';
+        cardElement.innerHTML = `
+            <div class="forecast-day">Day ${index + 1}</div>
+            <div class="forecast-date">${formatForecastDate(forecastCard.date)}</div>
+            <div class="forecast-price">${forecastCard.price_formatted || '-'}</div>
+        `;
+        forecastGrid.appendChild(cardElement);
+    });
+}
+
+renderForecastCards(forecastCards);
+
+document.querySelectorAll('.quick-symbol-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        if (symbolInput) {
+            symbolInput.value = button.dataset.symbol || '';
+            symbolInput.focus();
+        }
+    });
+});
+
+if (predictionForm && predictButton) {
+    predictionForm.addEventListener('submit', () => {
+        predictButton.classList.add('is-loading');
+        predictButton.innerHTML = '<span class="loading-spinner"></span><span class="ms-2">Predicting</span>';
+        if (chartLoading) {
+            chartLoading.classList.add('is-active');
+        }
+    });
+}
+
+if (watchlistForm && watchlistButton && watchlistSymbol) {
+    watchlistForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (watchlistButton.disabled) {
+            return;
+        }
+
+        watchlistButton.classList.add('is-saving');
+        const originalLabel = watchlistButton.innerText;
+        watchlistButton.innerText = 'Saving...';
+
+        try {
+            const response = await fetch('/watchlist/add', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ symbol: watchlistSymbol.value }),
+            });
+            const data = await response.json();
+
+            if (response.ok && data.ok) {
+                watchlistButton.innerText = 'Saved to Watchlist';
+                watchlistButton.disabled = true;
+            } else if (response.status === 401 && data.redirect_url) {
+                window.location.href = data.redirect_url;
+                return;
+            } else {
+                watchlistButton.innerText = originalLabel;
+            }
+        } catch (error) {
+            watchlistButton.innerText = originalLabel;
+        } finally {
+            watchlistButton.classList.remove('is-saving');
+        }
+    });
+}
+
+if (hasGaugeSignal) {
+    const rankedGaugeItems = gaugeLabels
+        .map((label, index) => ({ label, value: gaugeValues[index] ?? 0, className: gaugeClasses[index] }))
+        .sort((a, b) => b.value - a.value);
+
+    const topGaugeItem = rankedGaugeItems[0] || { label: '-', value: 0, className: '' };
+    document.getElementById('gaugePrimaryLabel').innerText = topGaugeItem.label;
+    document.getElementById('gaugePrimaryMeta').innerText = `${topGaugeItem.value}%`;
+    gaugeCenterLabel.classList.remove('is-muted');
+
+    renderGaugePill('gaugeSecondaryOne', rankedGaugeItems[1]);
+    renderGaugePill('gaugeSecondaryTwo', rankedGaugeItems[2]);
+} else {
+    gaugeCenterLabel.classList.add('is-muted');
+}
 </script>
 </body>
 </html>
